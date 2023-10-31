@@ -1,0 +1,15 @@
+{% extends "aintdoinit/base_template.html" %}
+{% block content %}
+<h1>Product List</h1>
+{% if product_list %}
+<ul>
+{% for product in product_list %}
+<li>
+<a href="{{ product.get_absolute_url }}">{{ product.title }}</a>
+</li>
+{% endfor %}
+</ul>
+{% else %}
+<p>There are no products registered.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,41 @@
+<!-- inherit from base.html-->
+{% extends "aintdoinit/base_template.html" %}
+
+<!-- Replace block content in base_template.html -->
+{% block content %}
+
+<h1>Product Title: {{ product.title }}</h1>
+<p><strong>Product Active: </strong> {{ product.is_active }}</p>
+
+<p><strong>Price:</strong> ${{ product.price }}</p>
+<p><strong>Product Type:</strong> {{ product.product_type }}</p>
+<p><strong>Description:</strong> {{ product.description }}</p>
+
+<img src="{{ product.image.url }}" alt="{{ product.title }}" />
+
+<h2>Product Available Modifications
+<a class="btn btn-primary" href="{% url 'create_mod' product.id %}" role="button">New</a> </h2>
+{% if mod_list %}
+<div class="container mt-4">
+    <div class="row">
+    {% for mod in mod_list %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ mod.sizes }}</h5>
+                    <h5 class="card-title">{{ mod.colors }}</h5>
+                    <a href="{{ mod.get_absolute_url }}" class="btn btn-primary">View</a>
+                    <a href="{% url 'update_mod' product.id mod.id %}" class="btn btn-primary">Update</a>
+                    <a href="{% url 'delete_mod' product.id mod.id %}" class="btn btn-primary">Delete</a>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+</div>
+{% else %}
+<p>There are no product modifications registered.</p>
+{% endif %}
+
+
+{% endblock %}

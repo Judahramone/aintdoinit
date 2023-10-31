@@ -1,0 +1,12 @@
+{% extends "aintdoinit/base_template.html" %}
+{% block content %}
+
+<h1>Delete Modification</h1>
+    <p>Are you sure you want to delete the modification "{{ project.title }}"?</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a class="btn btn-primary" href="{{ project.get_absolute_url }}" role="button">Cancel</a>
+    </form>
+{% endblock %}
