@@ -9,6 +9,7 @@ def index(request):
     return render( request, 'aintdoinit/index.html')
 
 def toggle_dark_mode(request):
-    # If the dark_mode flag exists and is True, set it to False. Otherwise, set it to True.
-    request.session['dark_mode'] = not request.session.get('dark_mode', False)
+    current_mode = request.session.get('dark_mode', False)
+    print("Current dark mode status:", current_mode)  # Debug line
+    request.session['dark_mode'] = not current_mode
     return redirect(request.META.get('HTTP_REFERER', 'default_url_if_no_referer'))
