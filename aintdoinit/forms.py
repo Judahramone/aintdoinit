@@ -1,11 +1,11 @@
 from django.forms import ModelForm
-from .models import Mod, Product
+from .models import ProductVariation, Product
 
 #create class for project form
-class ModForm(ModelForm):
+class ProductVariationForm(ModelForm):
     class Meta:
-        model = Mod
-        fields =('sizes', 'colors')
+        model = ProductVariation
+        fields =('size', 'color','stock','product')
 
 #create class for portfolio form
 class ProductForm(ModelForm):

@@ -9,6 +9,9 @@ class Size(models.Model):
         ('XL', 'Extra-Large'),
     ]
     value = models.CharField(max_length=2, choices=SIZE_CHOICES, unique=True)
+    
+    def __str__(self):
+        return self.get_value_display()
 
 class Color(models.Model):
     COLOR_CHOICES = [
@@ -19,6 +22,9 @@ class Color(models.Model):
         ('R', 'Red'),
     ]
     value = models.CharField(max_length=1, choices=COLOR_CHOICES, unique=True)   
+    
+    def __str__(self):
+        return self.get_value_display()
 
 class Product(models.Model):
     PRODUCT_TYPE = (
@@ -39,17 +45,16 @@ class Product(models.Model):
     image = models.ImageField(upload_to="uploads/%Y/%m/%d/", max_length=100)
     
     def __str__(self):
-        return self.title
+        return f"{self.title} ({self.get_product_type_display()})"
 
     def get_absolute_url(self):
         return reverse('product-detail', args=[str(self.id)])
 
-class Mod(models.Model):
+class ProductVariation(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    sizes = models.ManyToManyField(Size)
-    colors = models.ManyToManyField(Color)
-    
+    size = models.ForeignKey(Size, on_delete=models.CASCADE)
+    color = models.ForeignKey(Color, on_delete=models.CASCADE)
+    stock = models.PositiveIntegerField()
+
     def __str__(self):
-        return self.product.title  # reference to product's title
-
-
+        return f"{self.product.title} - {self.size.value} - {self.color.value} ({self.stock})"
