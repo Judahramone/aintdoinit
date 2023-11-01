@@ -1,31 +1,52 @@
 {% extends "aintdoinit/base_template.html" %}
+
 {% block content %}
-<h1>Product List</h1>
-{% if product_list %}
+<h1>Products</h1>
+<a class="btn btn-primary mb-3" href="{% url 'create_product' %}">Add New Product</a>
+<form method="get" action="">
+    <select name="product_type" onchange="this.form.submit()" class="mb-3">
+        <option value="">All Categories</option>
+        {% for type, display_name in PRODUCT_TYPE %}
+        <option value="{{ type }}" {% if request.GET.product_type == type %}selected{% endif %}>
+            {{ display_name }}
+        </option>
+        {% endfor %}
+    </select>
+    <select name="price_sort" onchange="this.form.submit()" class="mb-3">
+        <option value="">Sort by Price</option>
+        <option value="asc" {% if request.GET.price_sort == "asc" %}selected{% endif %}>Low to High</option>
+        <option value="desc" {% if request.GET.price_sort == "desc" %}selected{% endif %}>High to Low</option>
+    </select>
+</form>
 
-<div class="row">
-    {% for product in product_list %}
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <a href="{{ product.get_absolute_url }}">
-                <img src="{{ product.image.url }}" alt="{{ product.title }}" class="card-img-top product-image">
-            </a>
-            <div class="card-body">
-                <h5 class="card-title">
-                    <a href="{{ product.get_absolute_url }}">{{ product.title }}</a>
-                </h5>
-                <!-- You can add more product details here if needed -->
-            </div>
-        </div>
+{% for display_name, products in products_by_type.items %}
+    <h2>{{ display_name }}s</h2>
+    <div class="row">
+        {% if products %}
+            {% for product in products %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <a href="{{ product.get_absolute_url }}">
+                            <img src="{{ product.image.url }}" alt="{{ product.title }}" class="card-img-top product-image">
+                        </a>
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{{ product.get_absolute_url }}">{{ product.title }}</a>
+                            </h5>
+                            <h5 class="card-price">
+                                ${{ product.price }}
+                            </h5>
+                            <!-- You can add more product details here if needed -->
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="col-12">No {{ display_name|lower }}s available at the moment.</p>
+        {% endif %}
     </div>
-    {% endfor %}
-</div>
-
-{% else %}
-<p>There are no products registered.</p>
-{% endif %}
+{% endfor %}
 {% endblock %}
-
 {% block custom_css %}
 <style>
     /* CSS for hover zoom effect */

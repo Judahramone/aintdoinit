@@ -1,16 +1,15 @@
-<!-- inherit from base.html-->
 {% extends "aintdoinit/base_template.html" %}
-
-<!-- Replace block content in base_template.html -->
 {% block content %}
 
-<form action="" method="POST">
+<h1>{% if product_id %}Edit{% else %}Create{% endif %} Product</h1>
 
-{% csrf_token %}
-<table>
-{{ form.as_table }}
-</table>
-<input type="submit" name="Submit">
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">
+        {% if product_id %}Update{% else %}Add{% endif %}
+    </button>
+    <a class="btn btn-secondary" href="{% if product_id %}{% url 'product-detail' product_id %}{% else %}{% url 'products' %}{% endif %}">Cancel</a>
 </form>
 
 {% endblock %}

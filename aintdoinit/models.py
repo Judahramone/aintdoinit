@@ -31,7 +31,7 @@ class Product(models.Model):
         ('SK', 'Sticker'),
         ('TS', 'Short Sleeve T-shirt'),
         ('TL', 'Long Sleeve T-shirt'),
-        ('HZ', 'Zip-Up Hoodie '),
+        ('HZ', 'Zip-Up Hoodie'),
         ('HP', 'Pull-Over Hoodie'),
         ('CP', 'Cap'),
         ('MS', 'Miscellaneous')

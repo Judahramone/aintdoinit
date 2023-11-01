@@ -4,39 +4,47 @@
 <!-- Replace block content in base_template.html -->
 {% block content %}
 
-<h1>Product Title: {{ product.title }}</h1>
-<p><strong>Product Active: </strong> {{ product.is_active }}</p>
-
-<p><strong>Price $</strong> {{ product.price }}</p>
-<p><strong>Product Type:</strong> {{ product.get_product_type_display }}</p>
-<p><strong>Description:</strong> {{ product.description }}</p>
-
-<img src="{{product.image.url}}" alt="{{ product.title }}" />
-
-<h2>Product Available Modifications
-<a class="btn btn-primary" href="{% url 'create_variation' product.id %}" role="button">New</a> </h2>
-{% if variation_list %}
-<div class="container mt-4">
-    <div class="row">
-    {% for var in variation_list %}
-        <div class="col-md-4 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">{{ variation.color }}</h5>
-                    <h5 class="card-title">{{ variation.size }}</h5>
-                    <h5 class="card-title">{{ variation.stock }}</h5>
-                    <a href="{{ var.get_absolute_url }}" class="btn btn-primary">View</a>
-                    <a href="{% url 'update_variation' product.id var.id %}" class="btn btn-primary">Update</a>
-                    <a href="{% url 'delete_variation' product.id var.id %}" class="btn btn-primary">Delete</a>
-                </div>
-            </div>
-        </div>
-    {% endfor %}
+<div class="d-flex justify-content-between align-items-center">
+    <h1>{{ product.title }}</h1>
+    <div>
+        <a href="{% url 'update_product' product.id %}" class="btn btn-warning">Update</a>
+        <a href="{% url 'delete_product' product.id %}" class="btn btn-danger">Delete</a>
     </div>
 </div>
-{% else %}
-<p>There are no product modifications registered.</p>
-{% endif %}
+
+<!-- Responsive image with a max-width -->
+<img src="{{product.image.url}}" alt="{{ product.title }}" class="img-fluid" style="max-width: 600px; width: 100%; height: auto; display: block; margin: 0 auto;" />
+
+<p><strong>Price </strong> ${{ product.price }}</p>
+
+
+
+<h2>Product Variations
+    <a class="btn btn-primary" href="{% url 'create_variation' product.id %}" role="button">New</a> </h2>
+    {% if variation_list %}
+    <div class="container mt-4">
+        <div class="row">
+        {% for var in variation_list %}
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <!-- Display color square -->
+                        <div style="width: 25px; height: 25px; background-color: {{ var.color }};"></div>
+                        <h5 class="card-title">Color: {{ var.color }}</h5>
+                        <h5 class="card-title">Size: {{ var.size }}</h5>
+                        <h5 class="card-title">Stock: {{ var.stock }}</h5>
+                        <a href="{{ var.get_absolute_url }}" class="btn btn-primary">View</a>
+                        <a href="{% url 'update_variation' product.id var.id %}" class="btn btn-primary">Update</a>
+                        <a href="{% url 'delete_variation' product.id var.id %}" class="btn btn-primary">Delete</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <p>There are no product modifications registered.</p>
+    {% endif %}
 
 
 {% endblock %}

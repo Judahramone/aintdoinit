@@ -5,10 +5,10 @@ from .models import ProductVariation, Product
 class ProductVariationForm(ModelForm):
     class Meta:
         model = ProductVariation
-        fields =('size', 'color','stock','product')
+        fields =('size', 'color','stock')
 
 #create class for portfolio form
 class ProductForm(ModelForm):
     class Meta:
         model = Product
-        fields =('title', 'product_type', 'is_active', 'price', 'description', 'image')
+        fields =('title', 'is_active', 'product_type','price', 'description', 'image')
