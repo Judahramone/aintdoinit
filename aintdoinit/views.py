@@ -1,10 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.views import generic
-from .models import Product, ProductVariation, Cart, CartItem  # Update this import
+from .models import Product, Size, Color, ProductVariation, Cart, CartItem  # Update this import
 from .forms import ProductVariationForm, ProductForm  # Assuming you've renamed or updated the form
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
+from .constants import COLOR_CSS_MAP
+
 
 # Create your views here.
 def index(request):
@@ -61,13 +63,36 @@ class ProductDetailView(generic.DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(ProductDetailView, self).get_context_data(**kwargs)
-        # Get the product object for this view
+
         product = self.get_object()
-        # Filter the variations based on the specific product
-        variation_list = ProductVariation.objects.filter(product=product)
-        context['variation_list'] = variation_list
+
+        # Get selected size and color from request
+        selected_color = self.request.GET.get('color', None)
+        selected_size = self.request.GET.get('size', None)
+
+        # Fetch all available sizes and colors for this product
+        size_ids = ProductVariation.objects.filter(product=product, stock__gt=1).values_list('size__id', flat=True).distinct().order_by('size__id')
+        sizes = Size.objects.filter(id__in=size_ids).order_by('id').values_list('value', flat=True)
+
+        colors = ProductVariation.objects.filter(product=product, stock__gt=1).values_list('color__value', flat=True).distinct()
+
+        # Determine if 'Add to Cart' should be enabled
+        enable_add_to_cart = False
+        if selected_color and selected_size:
+            matching_variation = ProductVariation.objects.filter(product=product, color__value=selected_color, size=selected_size, stock__gt=1)
+            if matching_variation.exists():
+                enable_add_to_cart = True
+
+        context.update({
+            'product': product,
+            'available_sizes': Size.objects.filter(value__in=sizes),
+            'available_colors': Color.objects.filter(value__in=colors),
+            'selected_color': selected_color,
+            'selected_size': selected_size,
+            'enable_add_to_cart': enable_add_to_cart
+        })
+
         return context
-    
     
 def createProduct(request):
     if request.method == 'POST':
@@ -159,32 +184,43 @@ def toggle_dark_mode(request):
     request.session['dark_mode'] = not current_mode
     return redirect(request.META.get('HTTP_REFERER', 'default_url_if_no_referer'))
 
-def add_to_cart(request):
+def add_to_cart(request, product_id):
     if request.method == "POST":
-        product_variation_id = request.POST.get('product_variation')
+        # Fetch the selected size, color, and product_id
+        selected_size = request.POST.get('selected_size')
+        selected_color = request.POST.get('selected_color')
         
-        # Make sure we successfully retrieved a product_variation_id
-        if not product_variation_id:
-            # Handle this case, e.g., show an error message or redirect with an error
-            return HttpResponse("Error: No product variation selected.")
+        # Fetch the product variation
+        try:
+            product_variation = ProductVariation.objects.get(
+                product_id=product_id, 
+                size=selected_size, 
+                color=selected_color
+            )
+        except ProductVariation.DoesNotExist:
+            messages.error(request, "The selected size-color combination is unavailable.")
+            return redirect('product-detail', product_id=product_id)
+
+        # Check if the combination exists and is in stock
+        if product_variation.stock <= 0:
+            messages.error(request, "The selected size-color combination is out of stock.")
+            return redirect('product-detail', pk=product_id)
 
         cart, created = Cart.objects.get_or_create(user=request.user)
-        product_variation = get_object_or_404(ProductVariation, id=product_variation_id)
-        
+
         cart_item, created = CartItem.objects.get_or_create(cart=cart, product_variation=product_variation)
         if not created:
+            # Increase the quantity by one if the cart item already exists
             cart_item.quantity += 1
             cart_item.save()
 
-        # redirect to where you came from, or to the cart view
+        # Redirect to the previous page or to the cart view
         return redirect(request.META.get('HTTP_REFERER', reverse('cart_view')))
-
-# def cart_view(request):
-#     cart, created = Cart.objects.get_or_create(user=request.user)
-#     cart_items = CartItem.objects.filter(cart=cart)
-#     context = {'cart_items': cart_items}
-#     return render(request, 'aintdoinit/cart_view.html', context)
-
+    else:
+        # Handle the case where the method is not POST (maybe redirect to home or show an error)
+        messages.error(request, "Invalid request method.")
+        return redirect(reverse('home'))
+    
 def remove_from_cart(request, product_variation_id):
     try:
         cart = Cart.objects.get(user=request.user)

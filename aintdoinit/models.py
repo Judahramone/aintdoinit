@@ -2,6 +2,7 @@ from django.db import models
 from django.urls import reverse
 from django.conf import settings
 from django.db.models import Sum
+from .constants import COLOR_CSS_MAP
 
 
 class Size(models.Model):
@@ -23,6 +24,9 @@ class Color(models.Model):
         ('B', 'Blue'),
         ('G', 'Green'),
         ('R', 'Red'),
+        ('T', 'Transparent'),
+        ('M', 'Multi'),
+        ('D', 'Default'),
     ]
     value = models.CharField(max_length=1, choices=COLOR_CHOICES, unique=True)   
     
