@@ -179,8 +179,53 @@ def add_to_cart(request):
         # redirect to where you came from, or to the cart view
         return redirect(request.META.get('HTTP_REFERER', reverse('cart_view')))
 
+# def cart_view(request):
+#     cart, created = Cart.objects.get_or_create(user=request.user)
+#     cart_items = CartItem.objects.filter(cart=cart)
+#     context = {'cart_items': cart_items}
+#     return render(request, 'aintdoinit/cart_view.html', context)
+
+def remove_from_cart(request, product_variation_id):
+    try:
+        cart = Cart.objects.get(user=request.user)
+        product_variation = ProductVariation.objects.get(id=product_variation_id)
+        cart_item = CartItem.objects.get(cart=cart, product_variation=product_variation)
+        cart_item.delete()
+    except (CartItem.DoesNotExist, Cart.DoesNotExist, ProductVariation.DoesNotExist):
+        pass
+    return redirect('cart_view')
+
+def increment_item(request, product_variation_id):
+    cart = Cart.objects.get(user=request.user)
+    product_variation = ProductVariation.objects.get(id=product_variation_id)
+    cart_item = CartItem.objects.get(cart=cart, product_variation=product_variation)
+    cart_item.quantity += 1
+    cart_item.save()
+    return redirect('cart_view')
+
+def decrement_item(request, product_variation_id):
+    cart = Cart.objects.get(user=request.user)
+    product_variation = ProductVariation.objects.get(id=product_variation_id)
+    cart_item = CartItem.objects.get(cart=cart, product_variation=product_variation)
+    if cart_item.quantity > 1:
+        cart_item.quantity -= 1
+        cart_item.save()
+    else:
+        cart_item.delete()
+    return redirect('cart_view')
+
 def cart_view(request):
     cart, created = Cart.objects.get_or_create(user=request.user)
     cart_items = CartItem.objects.filter(cart=cart)
-    context = {'cart_items': cart_items}
+    
+    # Calculate subtotals for each cart item and grand total
+    subtotals = {}
+    grand_total = 0
+    for item in cart_items:
+        subtotal = item.product_variation.product.price * item.quantity
+        item.subtotal = subtotal
+        subtotals[item.id] = subtotal
+        grand_total += subtotal
+
+    context = {'cart_items': cart_items, 'subtotals': subtotals, 'grand_total': grand_total}
     return render(request, 'aintdoinit/cart_view.html', context)

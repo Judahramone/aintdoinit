@@ -16,6 +16,9 @@ urlpatterns = [
     path('toggle_dark_mode/', views.toggle_dark_mode, name='toggle_dark_mode'),
     path('cart/', views.cart_view, name='cart_view'),
     path('add_to_cart/', views.add_to_cart, name='add_to_cart'),
+    path('remove_from_cart/<int:product_variation_id>/', views.remove_from_cart, name='remove_from_cart'),
+    path('increment_item/<int:product_variation_id>/', views.increment_item, name='increment_item'),
+    path('decrement_item/<int:product_variation_id>/', views.decrement_item, name='decrement_item'),
 
 ]
 
