@@ -14,6 +14,9 @@ urlpatterns = [
     path('product/create_product/', views.createProduct, name='create_product'),  # Point to createProduct view
     path('product/delete_product/<int:product_id>/', views.deleteProduct, name='delete_product'),  # Point to deleteProduct view and added product_id param
     path('toggle_dark_mode/', views.toggle_dark_mode, name='toggle_dark_mode'),
+    path('cart/', views.cart_view, name='cart_view'),
+    path('add_to_cart/', views.add_to_cart, name='add_to_cart'),
+
 ]
 
 if settings.DEBUG:

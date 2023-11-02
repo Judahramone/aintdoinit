@@ -16,7 +16,16 @@
 <img src="{{product.image.url}}" alt="{{ product.title }}" class="img-fluid" style="max-width: 600px; width: 100%; height: auto; display: block; margin: 0 auto;" />
 
 <p><strong>Price </strong> ${{ product.price }}</p>
+<form method="post" action="{% url 'add_to_cart' %}">
 
+    {% csrf_token %}
+    <select name="product_variation">
+        {% for var in variation_list %}
+            <option value="{{ var.id }}">Size: {{ var.size }}, Color: {{ var.color }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary">Add to Cart</button>
+</form>
 
 
 <h2>Product Variations

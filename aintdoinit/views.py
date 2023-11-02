@@ -1,10 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.views import generic
-from .models import Product, ProductVariation  # Update this import
+from .models import Product, ProductVariation, Cart, CartItem  # Update this import
 from .forms import ProductVariationForm, ProductForm  # Assuming you've renamed or updated the form
 from django.contrib import messages
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 
 # Create your views here.
 def index(request):
@@ -130,6 +130,7 @@ def createVariation(request, product_id):
 
 def updateVariation(request, product_id, variation_id):
     variation = get_object_or_404(ProductVariation, pk=variation_id)  # safer retrieval
+    product_variation_id = request.POST.get('product_variation')
 
     if request.method == 'POST':
         form = ProductVariationForm(request.POST, instance=variation)
@@ -157,3 +158,29 @@ def toggle_dark_mode(request):
     print("Current dark mode status:", current_mode)  # Debug line
     request.session['dark_mode'] = not current_mode
     return redirect(request.META.get('HTTP_REFERER', 'default_url_if_no_referer'))
+
+def add_to_cart(request):
+    if request.method == "POST":
+        product_variation_id = request.POST.get('product_variation')
+        
+        # Make sure we successfully retrieved a product_variation_id
+        if not product_variation_id:
+            # Handle this case, e.g., show an error message or redirect with an error
+            return HttpResponse("Error: No product variation selected.")
+
+        cart, created = Cart.objects.get_or_create(user=request.user)
+        product_variation = get_object_or_404(ProductVariation, id=product_variation_id)
+        
+        cart_item, created = CartItem.objects.get_or_create(cart=cart, product_variation=product_variation)
+        if not created:
+            cart_item.quantity += 1
+            cart_item.save()
+
+        # redirect to where you came from, or to the cart view
+        return redirect(request.META.get('HTTP_REFERER', reverse('cart_view')))
+
+def cart_view(request):
+    cart, created = Cart.objects.get_or_create(user=request.user)
+    cart_items = CartItem.objects.filter(cart=cart)
+    context = {'cart_items': cart_items}
+    return render(request, 'aintdoinit/cart_view.html', context)

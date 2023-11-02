@@ -38,7 +38,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'aintdoinit',
+    'cart',
 ]
+
+DJANGO_BOOTSTRAP5_THEME = 'dark'
 
 # Add support for authenticating users
 AUTHENTICATION_BACKENDS = [

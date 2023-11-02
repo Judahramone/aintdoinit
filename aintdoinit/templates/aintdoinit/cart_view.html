@@ -1,0 +1,7 @@
+{% extends "aintdoinit/base_template.html" %}
+
+{% block content %}
+{% for cart_item in cart_items %}
+  {{ cart_item.product_variation.product.title }} - Size: {{ cart_item.product_variation.size }} - Color: {{ cart_item.product_variation.color }} - Quantity: {{ cart_item.quantity }}<br>
+{% endfor %}
+{% endblock %}

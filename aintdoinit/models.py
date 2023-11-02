@@ -1,5 +1,8 @@
 from django.db import models
 from django.urls import reverse
+from django.conf import settings
+from django.db.models import Sum
+
 
 class Size(models.Model):
     SIZE_CHOICES = [
@@ -58,3 +61,25 @@ class ProductVariation(models.Model):
 
     def __str__(self):
         return f"{self.product.title} - {self.size.value} - {self.color.value} ({self.stock})"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)  # Save the variation first
+        total_stock = ProductVariation.objects.filter(product=self.product).aggregate(total_stock=Sum('stock'))['total_stock']
+        self.product.is_active = total_stock > 0
+        self.product.save()
+
+class Cart(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Cart {self.id}"
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    product_variation = models.ForeignKey(ProductVariation, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.product_variation.product.title} - {self.quantity} item(s)"
