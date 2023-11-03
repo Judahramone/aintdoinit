@@ -38,13 +38,15 @@
 
           <!-- Color Selector -->
           <div class="mb-3">
-            <label for="colorSelector" class="form-label">Color:</label>
-            <select id="colorSelector" name="selected_color" class="form-select">
-              <option selected disabled>Select color</option>
+            <label class="form-label">Color:</label>
+            <div class="btn-group" data-toggle="buttons">
               {% for color in available_colors %}
-                <option value="{{ color.id }}">{{ color.get_value_display }}</option>
+                <label class="btn btn-outline-secondary">
+                  <input type="radio" name="selected_color" id="color{{ forloop.counter }}" autocomplete="off" value="{{ color.id }}" />
+                  <span class="color-square" style="background-color: {{ color.value|color_code }};"></span> {{ color.get_value_display }}
+                </label>
               {% endfor %}
-            </select>
+            </div>
           </div>
 
           <button type="submit" class="btn btn-primary">Add to Cart</button>
@@ -84,4 +86,30 @@
   {% else %}
     <p>There are no product modifications registered.</p>
   {% endif %}
+{% endblock %}
+
+{% block custom_css %}
+  <style>
+    .color-square {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+    
+    .btn-outline-secondary:not(:disabled):not(.disabled).active,
+    .btn-outline-secondary:not(:disabled):not(.disabled):active,
+    .show > .btn-outline-secondary.dropdown-toggle {
+      background-color: #fff;
+      border-color: #acacac;
+    }
+    
+    .btn.focus,
+    .btn:focus,
+    .btn:hover {
+      outline: none;
+      box-shadow: none;
+    }
+  </style>
 {% endblock %}
