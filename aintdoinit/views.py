@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.views import generic
-from .models import Product, Size, Color, ProductVariation, Cart, CartItem  # Update this import
-from .forms import ProductVariationForm, ProductForm  # Assuming you've renamed or updated the form
+from .models import Product, Size, Color, ProductVariation, Cart, CartItem 
+from .forms import ProductVariationForm, ProductForm  
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
 from .constants import COLOR_CSS_MAP
@@ -16,8 +16,7 @@ def index(request):
 
 class ProductListView(generic.ListView):
     model = Product
-    context_object_name = 'products_by_type'  # this is how you'll access the data in the template
-    template_name = 'your_template_name.html'  # specify your template name if it's not the default
+    context_object_name = 'products_by_type' 
 
     def get_queryset(self):
         # Filtering by product type
@@ -61,27 +60,6 @@ class ProductListView(generic.ListView):
 class ProductDetailView(generic.DetailView):
     model = Product
 
-    # def get_context_data(self, **kwargs):
-    #     context = super(ProductDetailView, self).get_context_data(**kwargs)
-        
-    #     # Get all size objects that are available for this product
-    #     available_sizes = Size.objects.filter(id__in=size_ids)
-
-    #     # Get all color objects that are available for this product
-    #     available_colors = Color.objects.filter(id__in=ProductVariation.objects.filter(product=product, stock__gt=0).values_list('color_id', flat=True).distinct())
-
-
-    #     product = self.get_object()
-
-    #     # Get selected size and color from request
-    #     selected_color = self.request.GET.get('color', None)
-    #     selected_size = self.request.GET.get('size', None)
-
-    #     # Fetch all available sizes and colors for this product
-    #     size_ids = ProductVariation.objects.filter(product=product, stock__gt=0).values_list('size__id', flat=True).distinct().order_by('size__id')
-    #     sizes = Size.objects.filter(id__in=size_ids).order_by('id').values_list('value', flat=True)
-
-    #     colors = ProductVariation.objects.filter(product=product, stock__gt=0).values_list('color__value', flat=True).distinct()
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         product = self.get_object()
@@ -171,12 +149,35 @@ def deleteProduct(request, product_id):
     return render(request, 'aintdoinit/product_delete.html', context)    
     
 
-
 class VariationListView(generic.ListView):
     model = ProductVariation
 
 class VariationDetailView(generic.DetailView):
     model = ProductVariation
+
+def updateVariation(request, product_id, variation_id):
+    variation = get_object_or_404(ProductVariation, pk=variation_id)
+    
+    # Check if we have stock to append from the session
+    append_stock = request.session.pop('append_stock', None)
+    
+    form = ProductVariationForm(request.POST or None, instance=variation)
+    
+    if request.method == 'POST' and form.is_valid():
+        if append_stock:
+            # Append the stock instead of just saving the form
+            variation.stock += append_stock
+            variation.save()
+        else:
+            form.save()
+        return redirect('product-detail', product_id)
+    elif append_stock:
+        # Prepopulate the form with the appended stock
+        variation.stock += append_stock
+        form = ProductVariationForm(instance=variation)
+
+    context = {'form': form, 'product_id': product_id, 'variation_id': variation_id}
+    return render(request, 'aintdoinit/variation_form.html', context)
 
 def createVariation(request, product_id):
     product = get_object_or_404(Product, pk=product_id)  # safer retrieval
@@ -185,32 +186,32 @@ def createVariation(request, product_id):
     if request.method == 'POST':
         form = ProductVariationForm(request.POST)
         if form.is_valid():
-            variation = form.save(commit=False)
-            variation.product = product
-            variation.save()
-            return redirect('product-detail', product_id)
+            # Extract the necessary data to check for existing variation
+            size = form.cleaned_data['size']
+            color = form.cleaned_data['color']
+            stock = form.cleaned_data['stock']
+            
+            # Check if variation already exists
+            existing_variation = ProductVariation.objects.filter(
+                product=product, size=size, color=color
+            ).first()
+            
+            if existing_variation:
+                # Instead of creating a new variation, update the existing one
+                request.session['append_stock'] = stock
+                return redirect('update_variation', product_id, existing_variation.id)
+            else:
+                variation = form.save(commit=False)
+                variation.product = product
+                variation.save()
+                return redirect('product-detail', product_id)
 
     context = {'form': form, 'product_id': product_id}
     return render(request, 'aintdoinit/variation_form.html', context)
 
-def updateVariation(request, product_id, variation_id):
-    variation = get_object_or_404(ProductVariation, pk=variation_id)  # safer retrieval
-    product_variation_id = request.POST.get('product_variation')
-
-    if request.method == 'POST':
-        form = ProductVariationForm(request.POST, instance=variation)
-        if form.is_valid():
-            form.save()
-            return redirect('product-detail', product_id)
-    else:
-        form = ProductVariationForm(instance=variation)
-
-    context = {'form': form, 'product_id': product_id, 'variation_id': variation_id}
-    return render(request, 'aintdoinit/variation_form.html', context)
-
 def deleteVariation(request, product_id, variation_id):
-    variation = get_object_or_404(ProductVariation, pk=variation_id)  # safer retrieval
-    product = get_object_or_404(Product, pk=product_id)  # safer retrieval
+    variation = get_object_or_404(ProductVariation, pk=variation_id) 
+    product = get_object_or_404(Product, pk=product_id)  
 
     if request.method == 'POST':
         variation.delete()
@@ -220,20 +221,19 @@ def deleteVariation(request, product_id, variation_id):
 
 def toggle_dark_mode(request):
     current_mode = request.session.get('dark_mode', False)
-    print("Current dark mode status:", current_mode)  # Debug line
+    print("Current dark mode status:", current_mode)  #Debug line
     request.session['dark_mode'] = not current_mode
     return redirect(request.META.get('HTTP_REFERER', 'default_url_if_no_referer'))
 
 def add_to_cart(request, product_id):
-    print("POST data:", request.POST)
+    print("POST data:", request.POST)#Debug line
     if request.method == "POST":
-        selected_size = request.POST.get('selected_size')
-        selected_color = request.POST.get('selected_color')
+        selected_size = request.POST.get('selected_size')#Debug line
+        selected_color = request.POST.get('selected_color')#Debug line
         print("POST size:", str(selected_size)) 
         print("POST color:", str(selected_color)) 
          # Check if both size and color are selected
         if not selected_size or not selected_color:
-            # You might want to add a message to the user here
             return HttpResponse("Please select both a size and a color.", status=400)
         # Assuming you have unique combinations of product, size, and color
         try:
@@ -245,7 +245,7 @@ def add_to_cart(request, product_id):
             )
             print(str(product_variation))
         except ProductVariation.DoesNotExist:
-            return HttpResponse("Error: No product variation selected.", status=400)
+            return HttpResponse("Error: Product variation selected is not available please try an alternative selection.", status=400)
 
         cart_id = 1  # Fixed cart ID for testing
         cart, created = Cart.objects.get_or_create(id=cart_id)
