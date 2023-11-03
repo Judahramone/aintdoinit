@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.views import generic
 from .models import Product, Size, Color, ProductVariation, Cart, CartItem  # Update this import
 from .forms import ProductVariationForm, ProductForm  # Assuming you've renamed or updated the form
@@ -61,35 +61,75 @@ class ProductListView(generic.ListView):
 class ProductDetailView(generic.DetailView):
     model = Product
 
+    # def get_context_data(self, **kwargs):
+    #     context = super(ProductDetailView, self).get_context_data(**kwargs)
+        
+    #     # Get all size objects that are available for this product
+    #     available_sizes = Size.objects.filter(id__in=size_ids)
+
+    #     # Get all color objects that are available for this product
+    #     available_colors = Color.objects.filter(id__in=ProductVariation.objects.filter(product=product, stock__gt=0).values_list('color_id', flat=True).distinct())
+
+
+    #     product = self.get_object()
+
+    #     # Get selected size and color from request
+    #     selected_color = self.request.GET.get('color', None)
+    #     selected_size = self.request.GET.get('size', None)
+
+    #     # Fetch all available sizes and colors for this product
+    #     size_ids = ProductVariation.objects.filter(product=product, stock__gt=0).values_list('size__id', flat=True).distinct().order_by('size__id')
+    #     sizes = Size.objects.filter(id__in=size_ids).order_by('id').values_list('value', flat=True)
+
+    #     colors = ProductVariation.objects.filter(product=product, stock__gt=0).values_list('color__value', flat=True).distinct()
     def get_context_data(self, **kwargs):
-        context = super(ProductDetailView, self).get_context_data(**kwargs)
-
+        context = super().get_context_data(**kwargs)
         product = self.get_object()
+        enable_add_to_cart=False
 
+        # Initialize size_ids and color_ids to ensure they have a value
+        size_ids = []
+        color_ids = []
+
+        # Fetch all available sizes for this product
+        size_ids = ProductVariation.objects.filter(product=product, stock__gt=0) \
+                                           .values_list('size__id', flat=True) \
+                                           .distinct().order_by('size__id')
+
+        # Now that we have size_ids, we can get the Size objects
+        available_sizes = Size.objects.filter(id__in=size_ids)
+
+        # Similar for colors
+        color_ids = ProductVariation.objects.filter(product=product, stock__gt=0) \
+                                            .values_list('color__id', flat=True) \
+                                            .distinct()
+        available_colors = Color.objects.filter(id__in=color_ids)
+
+        variation_list = ProductVariation.objects.filter(product=product).order_by('size', 'color')
+        
         # Get selected size and color from request
         selected_color = self.request.GET.get('color', None)
         selected_size = self.request.GET.get('size', None)
-
-        # Fetch all available sizes and colors for this product
-        size_ids = ProductVariation.objects.filter(product=product, stock__gt=1).values_list('size__id', flat=True).distinct().order_by('size__id')
-        sizes = Size.objects.filter(id__in=size_ids).order_by('id').values_list('value', flat=True)
-
-        colors = ProductVariation.objects.filter(product=product, stock__gt=1).values_list('color__value', flat=True).distinct()
-
+        
         # Determine if 'Add to Cart' should be enabled
-        enable_add_to_cart = False
         if selected_color and selected_size:
-            matching_variation = ProductVariation.objects.filter(product=product, color__value=selected_color, size=selected_size, stock__gt=1)
+            matching_variation = ProductVariation.objects.filter(
+            product=product,
+            color_id=selected_color,
+            size_id=selected_size,
+            stock__gt=0
+            )
             if matching_variation.exists():
                 enable_add_to_cart = True
 
         context.update({
             'product': product,
-            'available_sizes': Size.objects.filter(value__in=sizes),
-            'available_colors': Color.objects.filter(value__in=colors),
+            'available_sizes': available_sizes,
+            'available_colors': available_colors,
             'selected_color': selected_color,
             'selected_size': selected_size,
-            'enable_add_to_cart': enable_add_to_cart
+            'enable_add_to_cart': enable_add_to_cart,
+            'variation_list': variation_list,
         })
 
         return context
@@ -185,54 +225,57 @@ def toggle_dark_mode(request):
     return redirect(request.META.get('HTTP_REFERER', 'default_url_if_no_referer'))
 
 def add_to_cart(request, product_id):
+    print("POST data:", request.POST)
     if request.method == "POST":
-        # Fetch the selected size, color, and product_id
         selected_size = request.POST.get('selected_size')
         selected_color = request.POST.get('selected_color')
-        
-        # Fetch the product variation
+        print("POST size:", str(selected_size)) 
+        print("POST color:", str(selected_color)) 
+         # Check if both size and color are selected
+        if not selected_size or not selected_color:
+            # You might want to add a message to the user here
+            return HttpResponse("Please select both a size and a color.", status=400)
+        # Assuming you have unique combinations of product, size, and color
         try:
             product_variation = ProductVariation.objects.get(
-                product_id=product_id, 
-                size=selected_size, 
-                color=selected_color
+                product_id=product_id,
+                size_id=selected_size,
+                color_id=selected_color,
+                stock__gt=0
             )
+            print(str(product_variation))
         except ProductVariation.DoesNotExist:
-            messages.error(request, "The selected size-color combination is unavailable.")
-            return redirect('product-detail', product_id=product_id)
+            return HttpResponse("Error: No product variation selected.", status=400)
 
-        # Check if the combination exists and is in stock
-        if product_variation.stock <= 0:
-            messages.error(request, "The selected size-color combination is out of stock.")
-            return redirect('product-detail', pk=product_id)
-
-        cart, created = Cart.objects.get_or_create(user=request.user)
-
-        cart_item, created = CartItem.objects.get_or_create(cart=cart, product_variation=product_variation)
+        cart_id = 1  # Fixed cart ID for testing
+        cart, created = Cart.objects.get_or_create(id=cart_id)
+        
+        cart_item, created = CartItem.objects.get_or_create(
+            cart=cart, 
+            product_variation=product_variation
+        )
         if not created:
-            # Increase the quantity by one if the cart item already exists
             cart_item.quantity += 1
-            cart_item.save()
+        else:
+            cart_item.quantity = 1
+        cart_item.save()
 
-        # Redirect to the previous page or to the cart view
         return redirect(request.META.get('HTTP_REFERER', reverse('cart_view')))
-    else:
-        # Handle the case where the method is not POST (maybe redirect to home or show an error)
-        messages.error(request, "Invalid request method.")
-        return redirect(reverse('home'))
     
 def remove_from_cart(request, product_variation_id):
+    cart_id = 1  # Fixed cart ID for testing
     try:
-        cart = Cart.objects.get(user=request.user)
+        cart = Cart.objects.get(id=cart_id)
         product_variation = ProductVariation.objects.get(id=product_variation_id)
         cart_item = CartItem.objects.get(cart=cart, product_variation=product_variation)
         cart_item.delete()
     except (CartItem.DoesNotExist, Cart.DoesNotExist, ProductVariation.DoesNotExist):
-        pass
+        pass  # Maybe return an error message or redirect to an error page
     return redirect('cart_view')
 
 def increment_item(request, product_variation_id):
-    cart = Cart.objects.get(user=request.user)
+    cart_id = 1  # Fixed cart ID for testing
+    cart = Cart.objects.get(id=cart_id)
     product_variation = ProductVariation.objects.get(id=product_variation_id)
     cart_item = CartItem.objects.get(cart=cart, product_variation=product_variation)
     cart_item.quantity += 1
@@ -240,7 +283,8 @@ def increment_item(request, product_variation_id):
     return redirect('cart_view')
 
 def decrement_item(request, product_variation_id):
-    cart = Cart.objects.get(user=request.user)
+    cart_id = 1  # Fixed cart ID for testing
+    cart = Cart.objects.get(id=cart_id)
     product_variation = ProductVariation.objects.get(id=product_variation_id)
     cart_item = CartItem.objects.get(cart=cart, product_variation=product_variation)
     if cart_item.quantity > 1:
@@ -251,10 +295,10 @@ def decrement_item(request, product_variation_id):
     return redirect('cart_view')
 
 def cart_view(request):
-    cart, created = Cart.objects.get_or_create(user=request.user)
+    cart_id = 1  # Fixed cart ID for testing
+    cart, created = Cart.objects.get_or_create(id=cart_id)
     cart_items = CartItem.objects.filter(cart=cart)
     
-    # Calculate subtotals for each cart item and grand total
     subtotals = {}
     grand_total = 0
     for item in cart_items:

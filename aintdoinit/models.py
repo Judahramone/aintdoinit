@@ -56,6 +56,26 @@ class Product(models.Model):
 
     def get_absolute_url(self):
         return reverse('product-detail', args=[str(self.id)])
+    
+    def add_or_update_variation(self, size, color, stock):
+        # Attempt to get the product variation
+        variation, created = self.productvariation_set.get_or_create(
+            size=size,
+            color=color,
+            defaults={'stock': stock}
+        )
+        if not created:
+            # If the variation already exists, we update the stock
+            variation.stock += stock
+            variation.save()
+
+        # Recheck the product's active status based on the total stock
+        self.update_active_status()
+
+    def update_active_status(self):
+        total_stock = self.productvariation_set.aggregate(Sum('stock'))['stock__sum']
+        self.is_active = total_stock > 0
+        self.save()
 
 class ProductVariation(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
