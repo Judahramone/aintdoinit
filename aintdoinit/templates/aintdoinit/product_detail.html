@@ -74,7 +74,6 @@
 
                 <h5 class="card-title">Size: {{ var.size }}</h5>
                 <h5 class="card-title">Stock: {{ var.stock }}</h5>
-                {% comment %} <a href="{{ var.get_absolute_url }}" class="btn btn-primary">View</a> {% endcomment %}
                 <a href="{% url 'update_variation' product.id var.id %}" class="btn btn-primary">Update</a>
                 <a href="{% url 'delete_variation' product.id var.id %}" class="btn btn-danger">Delete</a>
               </div>

@@ -1,9 +1,14 @@
 <!-- inherit from base.html -->
-{% extends 'aintdoinit/base_template.html' %}
 
+{% extends 'aintdoinit/base_template.html' %}
+{% load static %}
 <!-- Replace block content in base_template.html -->
 {% block content %}
-  <h1>aintdoinit</h1>
-  <h2>active inaction</h2>
-  <h3>The fruition of a shared dream</h3>
+  <div class="text-center my-4">
+    <h1><strong>Aint Doin It</strong></h1>
+    <h3 class="mb-4">A lifestyle brand encapsulating active inaction</h3>
+    <img src="{% static 'images/IMG_4778.JPG' %}" alt="Aintdoinit" class="img-fluid" style="max-width: 50%; height: auto; filter: grayscale(100%);" />
+    <h3 class="mt-4">...the fruition of a shared dream...</h3>
+    <a href="{% url 'products' %}" class="btn btn-primary btn-lg">Shop Now!</a>
+  </div>
 {% endblock %}

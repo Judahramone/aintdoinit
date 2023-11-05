@@ -1,0 +1,10 @@
+<!-- inherit from base.html -->
+{% extends 'aintdoinit/base_template.html' %}
+{% load static %}
+<!-- Replace block content in base_template.html -->
+{% block content %}
+  <h1>aintdoinit</h1>
+  <h2>active inaction</h2>
+  <img src="{% static 'images/IMG_4778.JPG' %}" alt="Aintdoinit" class="img-fluid" style="max-width: 50%; height: auto;" />
+  <h3>The fruition of a shared dream</h3>
+{% endblock %}
