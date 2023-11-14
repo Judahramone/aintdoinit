@@ -1,11 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.views import generic
-from .models import Product, Size, Color, ProductVariation, Cart, CartItem 
-from .forms import ProductVariationForm, ProductForm  
+from .models import Product, Size, Color, ProductVariation, Cart, CartItem, Customer
+from .forms import ProductVariationForm, ProductForm, CreateUserForm 
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
 from .constants import COLOR_CSS_MAP
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User, Group
+#from .decorators import allowed_users
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 # Create your views here.
@@ -13,8 +17,12 @@ def index(request):
     # Render index.html
     return render( request, 'aintdoinit/index.html')
 
+def passwordReset(request):
+    # Render index.html
+    return render( request, 'registration/password_reset_form.html')
 
-class ProductListView(generic.ListView):
+
+class ProductListView(LoginRequiredMixin, generic.ListView):
     model = Product
     context_object_name = 'products_by_type' 
 
@@ -57,7 +65,7 @@ class ProductListView(generic.ListView):
         context['PRODUCT_TYPE'] = Product.PRODUCT_TYPE 
         return context
     
-class ProductDetailView(generic.DetailView):
+class ProductDetailView(LoginRequiredMixin, generic.DetailView):
     model = Product
 
     def get_context_data(self, **kwargs):
@@ -149,10 +157,10 @@ def deleteProduct(request, product_id):
     return render(request, 'aintdoinit/product_delete.html', context)    
     
 
-class VariationListView(generic.ListView):
+class VariationListView(LoginRequiredMixin, generic.ListView):
     model = ProductVariation
 
-class VariationDetailView(generic.DetailView):
+class VariationDetailView(LoginRequiredMixin, generic.DetailView):
     model = ProductVariation
 
 def updateVariation(request, product_id, variation_id):
@@ -309,3 +317,20 @@ def cart_view(request):
 
     context = {'cart_items': cart_items, 'subtotals': subtotals, 'grand_total': grand_total}
     return render(request, 'aintdoinit/cart_view.html', context)
+
+
+def registerPage(request):
+    form=CreateUserForm()
+    if request.method=='POST':
+        form= CreateUserForm(request.POST)
+        if form.is_valid():
+            user=form.save()
+            username = form.cleaned_day.get('username')
+            group=Group.objects.get(name='cust_accnt')
+            user.groups.add(group) 
+            customer= Customer.objects.create(user=user,)
+            customer.save()
+            messages.success(request, "Account was created for "+ username)
+            return redirect('login')
+    context= {'form':form}
+    return render(request, 'registration/register.html', context)
