@@ -1,7 +1,7 @@
 from django.forms import ModelForm
 from .models import ProductVariation, Product
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 
 #create class for project form
 class ProductVariationForm(ModelForm):
