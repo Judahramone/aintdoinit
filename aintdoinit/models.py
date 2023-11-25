@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.conf import settings
 from django.db.models import Sum
 from .constants import COLOR_CSS_MAP
-
+from django.contrib.auth.models import Group
 
 class Size(models.Model):
     SIZE_CHOICES = [
@@ -107,3 +107,25 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.product_variation.product.title} - {self.quantity} item(s)"
+    
+class Customer(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    cart = models.OneToOneField(Cart, on_delete=models.CASCADE, null=True, blank=True)
+    email = models.EmailField()
+    username = models.CharField(max_length=100)
+    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+    #Will want to handle credit card info more securely, possibly using a third-party service probably paypal
+    credit_card_info = models.CharField(max_length=255, null=True, blank=True)
+    billing_address = models.TextField(null=True, blank=True)
+    shipping_address = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        if is_new:
+            Cart.objects.create(user=self.user)
+            customer_group, created = Group.objects.get_or_create(name='cust_accnt')
+            self.user.groups.add(customer_group)
