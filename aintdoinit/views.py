@@ -10,7 +10,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User, Group
 #from .decorators import allowed_users
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required, user_passes_test
 
+def is_admin(user):
+    return user.is_superuser  # or use user.has_perm('some_permission') for specific permissions
 
 # Create your views here.
 def index(request):
@@ -21,8 +24,7 @@ def passwordReset(request):
     # Render index.html
     return render( request, 'registration/password_reset_form.html')
 
-
-class ProductListView(LoginRequiredMixin, generic.ListView):
+class ProductListView(generic.ListView):
     model = Product
     context_object_name = 'products_by_type' 
 
@@ -65,7 +67,7 @@ class ProductListView(LoginRequiredMixin, generic.ListView):
         context['PRODUCT_TYPE'] = Product.PRODUCT_TYPE 
         return context
     
-class ProductDetailView(LoginRequiredMixin, generic.DetailView):
+class ProductDetailView(generic.DetailView):
     model = Product
 
     def get_context_data(self, **kwargs):
@@ -119,7 +121,9 @@ class ProductDetailView(LoginRequiredMixin, generic.DetailView):
         })
 
         return context
-    
+
+@login_required
+@user_passes_test(is_admin)  
 def createProduct(request):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
@@ -132,6 +136,8 @@ def createProduct(request):
     context = {'form': form}
     return render(request, 'aintdoinit/product_form.html', context)
 
+@login_required
+@user_passes_test(is_admin)  
 def updateProduct(request, product_id):
     product = Product.objects.get(pk=product_id) 
     
@@ -146,6 +152,8 @@ def updateProduct(request, product_id):
     context = {'form': form, 'product_id': product_id}
     return render(request, 'aintdoinit/product_form.html', context)
 
+@login_required
+@user_passes_test(is_admin)  
 def deleteProduct(request, product_id):
     product = Product.objects.get(pk=product_id)
     
@@ -163,6 +171,8 @@ class VariationListView(LoginRequiredMixin, generic.ListView):
 class VariationDetailView(LoginRequiredMixin, generic.DetailView):
     model = ProductVariation
 
+@login_required
+@user_passes_test(is_admin)  
 def updateVariation(request, product_id, variation_id):
     variation = get_object_or_404(ProductVariation, pk=variation_id)
     
@@ -187,6 +197,8 @@ def updateVariation(request, product_id, variation_id):
     context = {'form': form, 'product_id': product_id, 'variation_id': variation_id}
     return render(request, 'aintdoinit/variation_form.html', context)
 
+@login_required
+@user_passes_test(is_admin)  
 def createVariation(request, product_id):
     product = get_object_or_404(Product, pk=product_id)  # safer retrieval
     form = ProductVariationForm()
@@ -217,6 +229,8 @@ def createVariation(request, product_id):
     context = {'form': form, 'product_id': product_id}
     return render(request, 'aintdoinit/variation_form.html', context)
 
+@login_required
+@user_passes_test(is_admin)  
 def deleteVariation(request, product_id, variation_id):
     variation = get_object_or_404(ProductVariation, pk=variation_id) 
     product = get_object_or_404(Product, pk=product_id)  

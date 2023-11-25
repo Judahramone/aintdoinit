@@ -2,7 +2,9 @@
 
 {% block content %}
 <h1>Products</h1>
+{% if request.user.is_superuser %}
 <a class="btn btn-primary mb-3" href="{% url 'create_product' %}">Add New Product</a>
+{% endif %}
 <form method="get" action="">
     <select name="product_type" onchange="this.form.submit()" class="mb-3">
         <option value="">All Categories</option>
@@ -36,7 +38,6 @@
                             <h5 class="card-price">
                                 ${{ product.price }}
                             </h5>
-                            <!-- You can add more product details here if needed -->
                         </div>
                     </div>
                 </div>
