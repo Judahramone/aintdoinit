@@ -50,6 +50,7 @@ AUTHENTICATION_BACKENDS = [
 'django.contrib.auth.backends.ModelBackend',
 ]
 
+CSRF_TRUSTED_ORIGINS = ['http://192.168.0.27']
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
