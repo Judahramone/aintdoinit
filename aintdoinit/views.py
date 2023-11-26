@@ -1,18 +1,28 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.views import generic
-from .models import Product, Size, Color, ProductVariation, Cart, CartItem 
-from .forms import ProductVariationForm, ProductForm  
+from .models import Product, Size, Color, ProductVariation, Cart, CartItem, Customer
+from .forms import ProductVariationForm, ProductForm, CreateUserForm 
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
 from .constants import COLOR_CSS_MAP
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User, Group
+#from .decorators import allowed_users
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required, user_passes_test
 
+def is_admin(user):
+    return user.is_superuser  # or use user.has_perm('some_permission') for specific permissions
 
 # Create your views here.
 def index(request):
     # Render index.html
     return render( request, 'aintdoinit/index.html')
 
+def passwordReset(request):
+    # Render index.html
+    return render( request, 'registration/password_reset_form.html')
 
 class ProductListView(generic.ListView):
     model = Product
@@ -111,7 +121,9 @@ class ProductDetailView(generic.DetailView):
         })
 
         return context
-    
+
+@login_required
+@user_passes_test(is_admin)  
 def createProduct(request):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
@@ -124,6 +136,8 @@ def createProduct(request):
     context = {'form': form}
     return render(request, 'aintdoinit/product_form.html', context)
 
+@login_required
+@user_passes_test(is_admin)  
 def updateProduct(request, product_id):
     product = Product.objects.get(pk=product_id) 
     
@@ -138,6 +152,8 @@ def updateProduct(request, product_id):
     context = {'form': form, 'product_id': product_id}
     return render(request, 'aintdoinit/product_form.html', context)
 
+@login_required
+@user_passes_test(is_admin)  
 def deleteProduct(request, product_id):
     product = Product.objects.get(pk=product_id)
     
@@ -149,12 +165,14 @@ def deleteProduct(request, product_id):
     return render(request, 'aintdoinit/product_delete.html', context)    
     
 
-class VariationListView(generic.ListView):
+class VariationListView(LoginRequiredMixin, generic.ListView):
     model = ProductVariation
 
-class VariationDetailView(generic.DetailView):
+class VariationDetailView(LoginRequiredMixin, generic.DetailView):
     model = ProductVariation
 
+@login_required
+@user_passes_test(is_admin)  
 def updateVariation(request, product_id, variation_id):
     variation = get_object_or_404(ProductVariation, pk=variation_id)
     
@@ -179,6 +197,8 @@ def updateVariation(request, product_id, variation_id):
     context = {'form': form, 'product_id': product_id, 'variation_id': variation_id}
     return render(request, 'aintdoinit/variation_form.html', context)
 
+@login_required
+@user_passes_test(is_admin)  
 def createVariation(request, product_id):
     product = get_object_or_404(Product, pk=product_id)  # safer retrieval
     form = ProductVariationForm()
@@ -209,6 +229,8 @@ def createVariation(request, product_id):
     context = {'form': form, 'product_id': product_id}
     return render(request, 'aintdoinit/variation_form.html', context)
 
+@login_required
+@user_passes_test(is_admin)  
 def deleteVariation(request, product_id, variation_id):
     variation = get_object_or_404(ProductVariation, pk=variation_id) 
     product = get_object_or_404(Product, pk=product_id)  
@@ -309,3 +331,20 @@ def cart_view(request):
 
     context = {'cart_items': cart_items, 'subtotals': subtotals, 'grand_total': grand_total}
     return render(request, 'aintdoinit/cart_view.html', context)
+
+
+def registerPage(request):
+    form=CreateUserForm()
+    if request.method=='POST':
+        form= CreateUserForm(request.POST)
+        if form.is_valid():
+            user=form.save()
+            username = form.cleaned_day.get('username')
+            group=Group.objects.get(name='cust_accnt')
+            user.groups.add(group) 
+            customer= Customer.objects.create(user=user,)
+            customer.save()
+            messages.success(request, "Account was created for "+ username)
+            return redirect('login')
+    context= {'form':form}
+    return render(request, 'registration/register.html', context)
