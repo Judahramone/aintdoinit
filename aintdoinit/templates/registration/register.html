@@ -1,0 +1,11 @@
+{% extends 'aintdoinit/base_template.html' %}
+{% block content %}
+  <h2>Aint Doin It Account Registration</h2>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" name="Create User" />
+  </form>
+  {{ form.errors }}
+{% endblock %}

@@ -19,7 +19,8 @@ urlpatterns = [
     path('remove_from_cart/<int:product_variation_id>/', views.remove_from_cart, name='remove_from_cart'),
     path('increment_item/<int:product_variation_id>/', views.increment_item, name='increment_item'),
     path('decrement_item/<int:product_variation_id>/', views.decrement_item, name='decrement_item'),
-
+    path('accounts/register/', views.registerPage, name = 'register_page'),
+    path('accounts/register/', views.passwordReset, name = 'password_reset'),
 ]
 
 if settings.DEBUG:

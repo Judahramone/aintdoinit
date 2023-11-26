@@ -8,10 +8,12 @@
       <!-- Title and buttons -->
       <div class="col-12 d-flex justify-content-between align-items-center mb-4">
         <h1>{{ product.title }}</h1>
-        <div>
-          <a href="{% url 'update_product' product.id %}" class="btn btn-primary">Update</a>
-          <a href="{% url 'delete_product' product.id %}" class="btn btn-danger">Delete</a>
-        </div>
+        {% if request.user.is_superuser %}
+          <div>
+            <a href="{% url 'update_product' product.id %}" class="btn btn-primary">Update</a>
+            <a href="{% url 'delete_product' product.id %}" class="btn btn-danger">Delete</a>
+          </div>
+        {% endif %}
       </div>
 
       <!-- Product image and details -->
@@ -54,36 +56,37 @@
       </div>
     </div>
   </div>
+  {% if request.user.is_superuser %}
+    <h2>
+      Product Variations
+      <a class="btn btn-primary" href="{% url 'create_variation' product.id %}" role="button">New</a>
+    </h2>
+    {% if variation_list %}
+      <div class="container mt-4">
+        <div class="row">
+          {% for var in variation_list %}
+            <div class="col-md-4 mb-4">
+              <div class="card">
+                <div class="card-body">
+                  <span>
+                    <h5 class="card-title" style="display: inline-block; margin-right: 10px;">Color: {{ var.color }}</h5>
+                    <!-- Display color square -->
+                    <div style="display: inline-block; width: 25px; height: 25px; background-color: {{ var.color.value|color_code }};"></div>
+                  </span>
 
-  <h2>
-    Product Variations
-    <a class="btn btn-primary" href="{% url 'create_variation' product.id %}" role="button">New</a>
-  </h2>
-  {% if variation_list %}
-    <div class="container mt-4">
-      <div class="row">
-        {% for var in variation_list %}
-          <div class="col-md-4 mb-4">
-            <div class="card">
-              <div class="card-body">
-                <span>
-                  <h5 class="card-title" style="display: inline-block; margin-right: 10px;">Color: {{ var.color }}</h5>
-                  <!-- Display color square -->
-                  <div style="display: inline-block; width: 25px; height: 25px; background-color: {{ var.color.value|color_code }};"></div>
-                </span>
-
-                <h5 class="card-title">Size: {{ var.size }}</h5>
-                <h5 class="card-title">Stock: {{ var.stock }}</h5>
-                <a href="{% url 'update_variation' product.id var.id %}" class="btn btn-primary">Update</a>
-                <a href="{% url 'delete_variation' product.id var.id %}" class="btn btn-danger">Delete</a>
+                  <h5 class="card-title">Size: {{ var.size }}</h5>
+                  <h5 class="card-title">Stock: {{ var.stock }}</h5>
+                  <a href="{% url 'update_variation' product.id var.id %}" class="btn btn-primary">Update</a>
+                  <a href="{% url 'delete_variation' product.id var.id %}" class="btn btn-danger">Delete</a>
+                </div>
               </div>
             </div>
-          </div>
-        {% endfor %}
+          {% endfor %}
+        </div>
       </div>
-    </div>
-  {% else %}
-    <p>There are no product modifications registered.</p>
+    {% else %}
+      <p>There are no product modifications registered.</p>
+    {% endif %}
   {% endif %}
 {% endblock %}
 
