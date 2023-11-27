@@ -1,0 +1,25 @@
+name: Django CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      selenium:
+        image: selenium/standalone-firefox:latest
+        ports:
+          - 4444:4444
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build Docker image
+      run: docker build -t my-django-app .
+    - name: Run Django container
+      run: docker run -d --name my_django_container my-django-app
+    - name: Run tests
+      run: docker exec my-app python manage.py test
+
