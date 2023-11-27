@@ -3,8 +3,21 @@ from django.test import TestCase
 # Create your tests here.
 
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.webdriver import WebDriver
+from selenium import webdriver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+
+class MySeleniumTests(StaticLiveServerTestCase):
+    # ... other setup code ...
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.selenium = webdriver.Remote(
+            command_executor='http://localhost:4444/wd/hub',
+            desired_capabilities=DesiredCapabilities.FIREFOX)
+        cls.selenium.implicitly_wait(10)
+
+    # ... rest of your test code ...
 
 
 class MySeleniumTests(StaticLiveServerTestCase):
@@ -13,7 +26,9 @@ class MySeleniumTests(StaticLiveServerTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.selenium = WebDriver()
+        cls.selenium = webdriver.Remote(
+            command_executor='http://localhost:4444/wd/hub',
+            desired_capabilities=DesiredCapabilities.FIREFOX)
         cls.selenium.implicitly_wait(10)
 
     @classmethod
